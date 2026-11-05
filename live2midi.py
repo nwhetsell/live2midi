@@ -185,8 +185,6 @@ def live2midi(file_path: Path, midi_type=1, verbose=False):
         if midi_type == 0:
             midi_path = file_path.parent.joinpath("midi")
             midi_path.mkdir(exist_ok=True)
-            music21_path = file_path.parent.joinpath("music21")
-            music21_path.mkdir(exist_ok=True)
 
             for midi_track in midi_tracks:
                 name = f"{re.sub(r"/", "-", midi_track.name)}"
