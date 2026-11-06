@@ -188,8 +188,6 @@ def live2midi(file_path: Path, midi_type=1, verbose=False):
 
             for midi_track in midi_tracks:
                 name = f"{re.sub(r"/", "-", midi_track.name)}"
-                console.print(f"Writing “{name}” files")
-
                 midi_file = mido.MidiFile(type=0, tracks=[midi_track], ticks_per_beat=ticks_per_beat)
                 midi_file_name = midi_path.joinpath(name).with_suffix(".mid")
                 midi_file.save(midi_file_name)
