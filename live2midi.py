@@ -11,10 +11,6 @@ import pitchtools
 from rich.console import Console
 from rich.table import Table
 
-parser = argparse.ArgumentParser()
-parser.add_argument("file_path", type=str, help="file path")
-parser.add_argument("--type", type=int, choices=[0, 1], default=1, help="MIDI file type (0 for multiple files)")
-parser.add_argument("--verbose", action="store_true", help="increase output verbosity")
 
 class Note:
     def __init__(self, midi_note_number: int, element: ET.Element):
@@ -197,6 +193,10 @@ def live2midi(file_path: Path, midi_type=1, verbose=False):
             midi_file.save(file_path.with_suffix(".mid"))
 
 def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("file_path", type=str, help="file path")
+    parser.add_argument("--type", type=int, choices=[0, 1], default=1, help="MIDI file type (0 for multiple files)")
+    parser.add_argument("--verbose", action="store_true", help="increase output verbosity")
     args = parser.parse_args()
     live2midi(Path(args.file_path), args.type, args.verbose)
     return 0
