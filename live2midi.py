@@ -187,10 +187,9 @@ def live2midi(file_path: Path, midi_type=1, verbose=False):
             midi_path.mkdir(exist_ok=True)
 
             for midi_track in midi_tracks:
-                name = f"{re.sub(r"/", "-", midi_track.name)}"
                 midi_file = mido.MidiFile(type=0, tracks=[midi_track], ticks_per_beat=ticks_per_beat)
-                midi_file_name = midi_path.joinpath(name).with_suffix(".mid")
-                midi_file.save(midi_file_name)
+                name = f"{re.sub(r"/", "-", midi_track.name)}"
+                midi_file.save(midi_path.joinpath(name).with_suffix(".mid"))
         else:
             midi_file = mido.MidiFile(type=1, tracks=midi_tracks, ticks_per_beat=ticks_per_beat)
             while file_path.suffix:
