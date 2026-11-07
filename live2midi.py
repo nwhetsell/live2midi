@@ -41,7 +41,6 @@ def live2midi(file_path: Path, midi_type=1, verbose=False):
 
     console = Console()
 
-    with console.status("Parsing Live set...") as status:
         if file_path.suffix == ".xml":
             with open(file_path, "r") as f:
                 xml_content = f.read()
@@ -177,7 +176,6 @@ def live2midi(file_path: Path, midi_type=1, verbose=False):
                     midi_track.append(message)
                     previous_time = time
 
-    with console.status("Writing files...") as status:
         if midi_type == 0:
             midi_path = file_path.parent.joinpath("midi")
             midi_path.mkdir(exist_ok=True)
