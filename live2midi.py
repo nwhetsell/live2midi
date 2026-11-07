@@ -12,31 +12,31 @@ from rich.console import Console
 from rich.table import Table
 
 
-class Note:
-    def __init__(self, midi_note_number: int, element: ET.Element):
-        self.midi_note_number = midi_note_number
-        self.time = float(element.attrib["Time"])
-        self.duration = float(element.attrib["Duration"])
-        self.velocity = float(element.attrib["Velocity"])
-        self.off_velocity = float(element.attrib["OffVelocity"])
-
-def find_value(element: ET.Element, path: str, default="0") -> str:
-    e = element.find(path)
-    if e is None:
-        return default
-    return e.attrib["Value"]
-
-def note_table(notes: list[Note]) -> Table:
-    table = Table(show_header=True, header_style="bold")
-    table.add_column("Note No.")
-    table.add_column("Pitch")
-    table.add_column("Start time", justify="right")
-    table.add_column("Duration", justify="right")
-    for note in sorted(notes, key=lambda note: note.time):
-        table.add_row(str(note.midi_note_number), pitchtools.m2n(note.midi_note_number), str(note.time), str(note.duration))
-    return table
-
 def live2midi(file_path: Path, midi_type=1, verbose=False):
+    class Note:
+        def __init__(self, midi_note_number: int, element: ET.Element):
+            self.midi_note_number = midi_note_number
+            self.time = float(element.attrib["Time"])
+            self.duration = float(element.attrib["Duration"])
+            self.velocity = float(element.attrib["Velocity"])
+            self.off_velocity = float(element.attrib["OffVelocity"])
+
+    def find_value(element: ET.Element, path: str, default="0") -> str:
+        e = element.find(path)
+        if e is None:
+            return default
+        return e.attrib["Value"]
+
+    def note_table(notes: list[Note]) -> Table:
+        table = Table(header_style="bold")
+        table.add_column("Note No.")
+        table.add_column("Pitch")
+        table.add_column("Start time", justify="right")
+        table.add_column("Duration", justify="right")
+        for note in sorted(notes, key=lambda note: note.time):
+            table.add_row(str(note.midi_note_number), pitchtools.m2n(note.midi_note_number), str(note.time), str(note.duration))
+        return table
+
     ticks_per_beat = mido.MidiFile().ticks_per_beat
 
     console = Console()
