@@ -422,7 +422,7 @@ def test_clip_start_before_first_note_on():
     assert message.note == 60
     assert message.time == 240
 
-def test_clip_with_disabled_notes():
+def test_clip_with_deactivated_notes():
     message = unlooped_messages[30]
     assert message.type == "note_on"
     assert message.note == 72
