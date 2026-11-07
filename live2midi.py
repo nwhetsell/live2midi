@@ -75,7 +75,7 @@ def live2midi(file_path: Path, midi_type=1, verbose=False):
 
         for midi_clip in live_track.findall("DeviceChain/MainSequencer/ClipTimeable/ArrangerAutomation/Events/MidiClip"):
             if find_value(midi_clip, "Disabled") == "true":
-                continue;
+                continue
 
             midi_clip_start = float(find_value(midi_clip, "CurrentStart"))
             midi_clip_end = float(find_value(midi_clip, "CurrentEnd"))
