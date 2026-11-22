@@ -12,7 +12,7 @@ from rich.console import Console
 from rich.table import Table
 
 
-def live2midi(file_path: Path, midi_type=1, verbose=False):
+def live2midi(file_path: Path, midi_type=1, track_filter="", verbose=False):
     class Note:
         def __init__(self, midi_note_number: int, element: ET.Element):
             self.midi_note_number = midi_note_number
@@ -67,6 +67,8 @@ def live2midi(file_path: Path, midi_type=1, verbose=False):
     midi_tracks: list[mido.MidiTrack] = []
     for live_track in root.findall("LiveSet/Tracks/MidiTrack"):
         track_name = find_value(live_track, "Name/EffectiveName")
+        if len(track_filter) > 0 and track_name.find(track_filter) < 0:
+            continue
         if verbose:
             console.print(f"Parsing track “[bold green]{track_name}[/bold green]”\n")
 
@@ -193,10 +195,12 @@ def live2midi(file_path: Path, midi_type=1, verbose=False):
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("file_path", type=str, help="file path")
-    parser.add_argument("--type", type=int, choices=[0, 1], default=1, help="MIDI file type (0 for multiple files)")
+    parser.add_argument("--filter", type=str, default="", help="Parse only tracks that match the filter string", dest="track_filter")
+    parser.add_argument("--type", type=int, choices=[0, 1], default=1, help="MIDI file type (0 for multiple files)", dest="midi_type")
     parser.add_argument("--verbose", action="store_true", help="increase output verbosity")
-    args = parser.parse_args()
-    live2midi(Path(args.file_path), args.type, args.verbose)
+    args = vars(parser.parse_args())
+    path = Path(args.pop("file_path"))
+    live2midi(path, **args)
     return 0
 
 if __name__ == "__main__":
