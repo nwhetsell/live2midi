@@ -3,6 +3,7 @@ import copy
 import gzip
 import re
 import sys
+import warnings
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -178,19 +179,26 @@ def live2midi(file_path: Path, midi_type=1, track_filter="", verbose=False):
                 midi_track.append(message)
                 previous_time = time
 
+    if len(midi_tracks) < 1:
+        message = f"No MIDI tracks found in “{file_path.name}”"
+        if len(track_filter) > 0:
+           message += f" matching filter “{track_filter}”"
+        message += ", MIDI files will contain no note events"
+        warnings.warn(message)
+
     if midi_type == 0:
         midi_path = file_path.parent.joinpath("midi")
         midi_path.mkdir(exist_ok=True)
-
         for midi_track in midi_tracks:
             midi_file = mido.MidiFile(type=0, tracks=[midi_track], ticks_per_beat=ticks_per_beat)
             name = f"{re.sub(r"/", "-", midi_track.name)}"
             midi_file.save(midi_path.joinpath(name).with_suffix(".mid"))
     else:
         midi_file = mido.MidiFile(type=1, tracks=midi_tracks, ticks_per_beat=ticks_per_beat)
-        while file_path.suffix:
-            file_path = file_path.with_suffix("")
-        midi_file.save(file_path.with_suffix(".mid"))
+        midi_file_path = file_path
+        while midi_file_path.suffix:
+            midi_file_path = midi_file_path.with_suffix("")
+        midi_file.save(midi_file_path.with_suffix(".mid"))
 
 def main() -> int:
     parser = argparse.ArgumentParser()
