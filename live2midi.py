@@ -1,6 +1,7 @@
 import argparse
 import copy
 import gzip
+import math
 import re
 import sys
 import warnings
@@ -13,7 +14,7 @@ from rich.console import Console
 from rich.table import Table
 
 
-def live2midi(file_path: Path, midi_type=1, track_filter="", verbose=False):
+def live2midi(file_path: Path, arrangement_loop=False, midi_type=1, output_file_name="", track_filter="", verbose=False):
     class Note:
         def __init__(self, midi_note_number: int, element: ET.Element):
             self.midi_note_number = midi_note_number
@@ -50,20 +51,33 @@ def live2midi(file_path: Path, midi_type=1, track_filter="", verbose=False):
             xml_content = f.read()
     root = ET.fromstring(xml_content)
 
+    # Get arrangement loop start and end times.
+    arrangement_loop_start = 0
+    arrangement_loop_end = math.inf
+    if arrangement_loop:
+        arrangement_loop_length = float(find_value(root, "LiveSet/Transport/LoopLength"))
+        if arrangement_loop_length > 0:
+            arrangement_loop_start = float(find_value(root, "LiveSet/Transport/LoopStart"))
+            arrangement_loop_end = arrangement_loop_start + arrangement_loop_length
+            if verbose:
+                console.print(f"Using arrangement loop with start {arrangement_loop_start}, length {arrangement_loop_length}, end {arrangement_loop_end}\n")
+
     # Get time signature changes.
     time_signature_events: list[mido.MetaMessage] = []
     for event in root.findall("LiveSet/MainTrack/AutomationEnvelopes/Envelopes/AutomationEnvelope/EnvelopeTarget/PointeeId[@Value='10']/../..Automation/Events/EnumEvent"):
-        numerator = int(event.attrib["Value"]) + 1
-        denominator = 1
-        while numerator > 99:
-            numerator -= 99
-            denominator *= 2
-        time_signature_events.append(mido.MetaMessage(
-            "time_signature",
-            numerator=numerator,
-            denominator=denominator,
-            time=int(max(float(event.attrib["Time"]), 0) * ticks_per_beat)
-        ))
+        time = max(float(event.attrib["Time"]), 0)
+        if arrangement_loop_start <= time <= arrangement_loop_end:
+            numerator = int(event.attrib["Value"]) + 1
+            denominator = 1
+            while numerator > 99:
+                numerator -= 99
+                denominator *= 2
+            time_signature_events.append(mido.MetaMessage(
+                "time_signature",
+                numerator=numerator,
+                denominator=denominator,
+                time=int(time * ticks_per_beat)
+            ))
 
     midi_tracks: list[mido.MidiTrack] = []
     for live_track in root.findall("LiveSet/Tracks/MidiTrack"):
@@ -148,22 +162,24 @@ def live2midi(file_path: Path, midi_type=1, track_filter="", verbose=False):
                     console.print(f"Parsed {len(notes)} notes:")
                     console.print(note_table(notes))
 
+                max_end_time = min(midi_clip_end, arrangement_loop_end)
                 for note in notes:
                     time = midi_clip_start + note.time
-                    note.duration = min(note.duration, midi_clip_end - time)
-                    if note.duration > 0:
-                        track_messages.append(mido.Message(
-                            "note_on",
-                            note=note.midi_note_number,
-                            time=int(time * ticks_per_beat),
-                            velocity=int(note.velocity)
-                        ))
-                        track_messages.append(mido.Message(
-                            "note_off",
-                            note=note.midi_note_number,
-                            time=int((time + note.duration) * ticks_per_beat),
-                            velocity=int(note.off_velocity)
-                        ))
+                    if arrangement_loop_start <= time <= arrangement_loop_end:
+                        note.duration = min(note.duration, max_end_time - time)
+                        if note.duration > 0:
+                            track_messages.append(mido.Message(
+                                "note_on",
+                                note=note.midi_note_number,
+                                time=int(time * ticks_per_beat),
+                                velocity=int(note.velocity)
+                            ))
+                            track_messages.append(mido.Message(
+                                "note_off",
+                                note=note.midi_note_number,
+                                time=int((time + note.duration) * ticks_per_beat),
+                                velocity=int(note.off_velocity)
+                            ))
             else:
                 track_messages.clear()
 
@@ -172,7 +188,7 @@ def live2midi(file_path: Path, midi_type=1, track_filter="", verbose=False):
             midi_track.name = track_name
             midi_tracks.append(midi_track)
 
-            previous_time = 0
+            previous_time = int(arrangement_loop_start * ticks_per_beat)
             for message in sorted(track_messages, key=lambda message: message.time): # pyright: ignore
                 time = message.time # pyright: ignore
                 message.time -= previous_time # pyright: ignore
@@ -196,14 +212,19 @@ def live2midi(file_path: Path, midi_type=1, track_filter="", verbose=False):
     else:
         midi_file = mido.MidiFile(type=1, tracks=midi_tracks, ticks_per_beat=ticks_per_beat)
         midi_file_path = file_path
-        while midi_file_path.suffix:
-            midi_file_path = midi_file_path.with_suffix("")
+        if len(output_file_name) > 0:
+            midi_file_path = midi_file_path.with_name(output_file_name)
+        else:
+            while midi_file_path.suffix:
+                midi_file_path = midi_file_path.with_suffix("")
         midi_file.save(midi_file_path.with_suffix(".mid"))
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("file_path", type=str, help="file path")
+    parser.add_argument("--arrangement-loop", help="Output notes that start inside the arrangement loop / punch recording area", action="store_true")
     parser.add_argument("--filter", type=str, default="", help="Parse only tracks that match the filter string", dest="track_filter")
+    parser.add_argument("--output", type=str, default="", help="Output file name", dest="output_file_name")
     parser.add_argument("--type", type=int, choices=[0, 1], default=1, help="MIDI file type (0 for multiple files)", dest="midi_type")
     parser.add_argument("--verbose", action="store_true", help="increase output verbosity")
     args = vars(parser.parse_args())

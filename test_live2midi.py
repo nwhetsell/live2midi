@@ -5,9 +5,8 @@ import mido
 from live2midi import live2midi
 
 live2midi(Path("test_live2midi.als.xml"))
-actual = mido.MidiFile("test_live2midi.mid")
 
-looped_clips_track = actual.tracks[0]
+looped_clips_track = mido.MidiFile("test_live2midi.mid").tracks[0]
 
 def test_looped_clips_track_name():
     assert looped_clips_track.name == "Looped clips"
@@ -284,7 +283,7 @@ def test_loop_start_after_clip_start():
     # with the correct time (480). This may be a bug in Mido.
     # assert message.time == 480
 
-unlooped_clips_track = actual.tracks[1]
+unlooped_clips_track = mido.MidiFile("test_live2midi.mid").tracks[1]
 
 def test_unlooped_clips_track_name():
     assert unlooped_clips_track.name == "Unlooped clips"
@@ -456,3 +455,96 @@ def test_time_signatures():
     assert message.numerator == 5
     assert message.denominator == 1
     assert message.time == 3240
+
+def test_arrangement_loop():
+    live2midi(Path("test_live2midi.als.xml"), arrangement_loop=True, output_file_name="arrangement_loop")
+    messages = [message for message in mido.MidiFile("arrangement_loop.mid").tracks[0] if not message.is_meta]
+    assert len(messages) == 22
+    message = messages[0]
+    assert message.type == "note_on"
+    assert message.note == 60
+    assert message.time == 1680
+    message = messages[1]
+    assert message.type == "note_off"
+    assert message.note == 60
+    assert message.time == 480
+    message = messages[2]
+    assert message.type == "note_on"
+    assert message.note == 64
+    assert message.time == 0
+    message = messages[3]
+    assert message.type == "note_off"
+    assert message.note == 64
+    assert message.time == 480
+    message = messages[4]
+    assert message.type == "note_on"
+    assert message.note == 67
+    assert message.time == 0
+    message = messages[5]
+    assert message.type == "note_off"
+    assert message.note == 67
+    assert message.time == 480
+    message = messages[6]
+    assert message.type == "note_on"
+    assert message.note == 72
+    assert message.time == 0
+    message = messages[7]
+    assert message.type == "note_off"
+    assert message.note == 72
+    assert message.time == 240
+    message = messages[8]
+    assert message.type == "note_on"
+    assert message.note == 60
+    assert message.time == 0
+    message = messages[9]
+    assert message.type == "note_off"
+    assert message.note == 60
+    assert message.time == 480
+    message = messages[10]
+    assert message.type == "note_on"
+    assert message.note == 64
+    assert message.time == 0
+    message = messages[11]
+    assert message.type == "note_off"
+    assert message.note == 64
+    assert message.time == 480
+    message = messages[12]
+    assert message.type == "note_on"
+    assert message.note == 67
+    assert message.time == 0
+    message = messages[13]
+    assert message.type == "note_off"
+    assert message.note == 67
+    assert message.time == 480
+    message = messages[14]
+    assert message.type == "note_on"
+    assert message.note == 72
+    assert message.time == 0
+    message = messages[15]
+    assert message.type == "note_off"
+    assert message.note == 72
+    assert message.time == 240
+    message = messages[16]
+    assert message.type == "note_on"
+    assert message.note == 60
+    assert message.time == 0
+    message = messages[17]
+    assert message.type == "note_off"
+    assert message.note == 60
+    assert message.time == 480
+    message = messages[18]
+    assert message.type == "note_on"
+    assert message.note == 60
+    assert message.time == 1920
+    message = messages[19]
+    assert message.type == "note_off"
+    assert message.note == 60
+    assert message.time == 480
+    message = messages[20]
+    assert message.type == "note_on"
+    assert message.note == 64
+    assert message.time == 0
+    message = messages[21]
+    assert message.type == "note_off"
+    assert message.note == 64
+    assert message.time == 240

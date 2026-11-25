@@ -3948,8 +3948,8 @@
 		<Transport>
 			<PhaseNudgeTempo Value="10" />
 			<LoopOn Value="false" />
-			<LoopStart Value="8" />
-			<LoopLength Value="16" />
+			<LoopStart Value="8.5" />
+			<LoopLength Value="17" />
 			<LoopIsSongStart Value="false" />
 			<CurrentTime Value="38" />
 			<PunchIn Value="false" />
